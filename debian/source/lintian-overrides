@@ -1,0 +1,5 @@
+python-iniconfig source: file-without-copyright-information
+python-iniconfig source: no-debian-changes
+python-iniconfig source: source-contains-prebuilt-windows-binary
+python-iniconfig source: source-is-missing
+python-iniconfig source: source-package-encodes-python-version
