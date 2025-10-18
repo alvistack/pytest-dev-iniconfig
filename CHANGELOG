@@ -1,3 +1,12 @@
+2.3.0
+=====
+
+* add IniConfig.parse() classmethod with strip_inline_comments parameter (fixes #55)
+  - by default (strip_inline_comments=True), inline comments are properly stripped from values
+  - set strip_inline_comments=False to preserve old behavior if needed
+* IniConfig() constructor maintains backward compatibility (does not strip inline comments)
+* users should migrate to IniConfig.parse() for correct comment handling
+
 2.2.0
 =====
 

@@ -125,7 +125,7 @@ def test_iniconfig_from_file(tmp_path: Path) -> None:
     config = IniConfig(str(path), "[diff]")
     assert list(config.sections) == ["diff"]
     with pytest.raises(TypeError):
-        IniConfig(data=path.read_text())  # type: ignore
+        IniConfig(data=path.read_text())  # type: ignore[call-arg]
 
 
 def test_iniconfig_section_first() -> None:
@@ -304,3 +304,75 @@ def test_api_import() -> None:
 )
 def test_iscommentline_true(line: str) -> None:
     assert iscommentline(line)
+
+
+def test_parse_strips_inline_comments() -> None:
+    """Test that IniConfig.parse() strips inline comments from values by default."""
+    config = IniConfig.parse(
+        "test.ini",
+        data=dedent(
+            """
+            [section1]
+            name1 = value1 # this is a comment
+            name2 = value2 ; this is also a comment
+            name3 = value3# no space before comment
+            list = a, b, c # some items
+            """
+        ),
+    )
+    assert config["section1"]["name1"] == "value1"
+    assert config["section1"]["name2"] == "value2"
+    assert config["section1"]["name3"] == "value3"
+    assert config["section1"]["list"] == "a, b, c"
+
+
+def test_parse_strips_inline_comments_from_continuations() -> None:
+    """Test that inline comments are stripped from continuation lines."""
+    config = IniConfig.parse(
+        "test.ini",
+        data=dedent(
+            """
+            [section]
+            names =
+                Alice # first person
+                Bob ; second person
+                Charlie
+            """
+        ),
+    )
+    assert config["section"]["names"] == "Alice\nBob\nCharlie"
+
+
+def test_parse_preserves_inline_comments_when_disabled() -> None:
+    """Test that IniConfig.parse(strip_inline_comments=False) preserves comments."""
+    config = IniConfig.parse(
+        "test.ini",
+        data=dedent(
+            """
+            [section1]
+            name1 = value1 # this is a comment
+            name2 = value2 ; this is also a comment
+            list = a, b, c # some items
+            """
+        ),
+        strip_inline_comments=False,
+    )
+    assert config["section1"]["name1"] == "value1 # this is a comment"
+    assert config["section1"]["name2"] == "value2 ; this is also a comment"
+    assert config["section1"]["list"] == "a, b, c # some items"
+
+
+def test_constructor_preserves_inline_comments_for_backward_compatibility() -> None:
+    """Test that IniConfig() constructor preserves old behavior (no stripping)."""
+    config = IniConfig(
+        "test.ini",
+        data=dedent(
+            """
+            [section1]
+            name1 = value1 # this is a comment
+            name2 = value2 ; this is also a comment
+            """
+        ),
+    )
+    assert config["section1"]["name1"] == "value1 # this is a comment"
+    assert config["section1"]["name2"] == "value2 ; this is also a comment"
