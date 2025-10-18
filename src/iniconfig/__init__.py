@@ -96,17 +96,29 @@ class IniConfig:
         path: str | os.PathLike[str],
         data: str | None = None,
         encoding: str = "utf-8",
+        *,
+        _sections: Mapping[str, Mapping[str, str]] | None = None,
+        _sources: Mapping[tuple[str, str | None], int] | None = None,
     ) -> None:
         self.path = os.fspath(path)
-        if data is None:
-            with open(self.path, encoding=encoding) as fp:
-                data = fp.read()
 
-        # Use old behavior (no stripping) for backward compatibility
-        sections_data, sources = _parse.parse_ini_data(
-            self.path, data, strip_inline_comments=False
-        )
+        # Determine sections and sources
+        if _sections is not None and _sources is not None:
+            # Use provided pre-parsed data (called from parse())
+            sections_data = _sections
+            sources = _sources
+        else:
+            # Parse the data (backward compatible path)
+            if data is None:
+                with open(self.path, encoding=encoding) as fp:
+                    data = fp.read()
 
+            # Use old behavior (no stripping) for backward compatibility
+            sections_data, sources = _parse.parse_ini_data(
+                self.path, data, strip_inline_comments=False
+            )
+
+        # Assign once to Final attributes
         self._sources = sources
         self.sections = sections_data
 
@@ -162,12 +174,8 @@ class IniConfig:
             strip_section_whitespace=strip_section_whitespace,
         )
 
-        # Create instance directly without calling __init__
-        instance = cls.__new__(cls)
-        object.__setattr__(instance, "path", fspath)
-        object.__setattr__(instance, "sections", sections_data)
-        object.__setattr__(instance, "_sources", sources)
-        return instance
+        # Call constructor with pre-parsed sections and sources
+        return cls(path=fspath, _sections=sections_data, _sources=sources)
 
     def lineof(self, section: str, name: str | None = None) -> int | None:
         lineno = self._sources.get((section, name))
