@@ -1,0 +1,4 @@
+python3-iniconfig: copyright-without-copyright-notice
+python3-iniconfig: initial-upload-closes-no-bugs
+python3-iniconfig: no-manual-page
+python3-iniconfig: zero-byte-file-in-doc-directory
